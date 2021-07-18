@@ -22,31 +22,64 @@ static void	father(char **av, int *fd, pid_t pid)
 	execlp("cat", "cat", NULL);
 }
 
+static void trim(char *str, char *cmd)
+{
+	int		i;
+	int		j;
+	char	*newstr;
+
+	i = 0;
+	j = 0;
+	newstr = ft_calloc((ft_strlen(str) - 3), sizeof(char));
+	while (!(ft_isalpha(str[i])))
+		i++;
+	while (ft_isalpha(newstr[i]))
+		newstr[j++] = str[i++];
+	cmd = newstr;
+}
+
 int	main(int ac, char **av)
 {
 	int		fd[2];
 	pid_t	pid;
+	char	*cmd1;
+	char	*cmd2;
+	int 	i = 0;
 
-	if (ac != 5)
+	//trim(av[1], cmd1);
+	//trim(av[2], cmd2);
+
+	// if (ac != 5)
+	// {
+	// 	ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
+	// 	return(0);
+	// }
+	// if ((pipe(fd) == -1))
+	// {
+	// 	perror("pipe error");
+	// 	exit(-1);
+	// }
+	// pid = fork();
+	// if (pid == -1)
+	// {
+	// 	perror("fork error");
+	// 	exit(1);
+	// }
+	// else if (pid == 0)
+	// 	child(av, fd, pid);
+	// else
+	// 	father(av, fd, pid);
+	// wait(NULL);
+
+	//printf("cmd 1 = %s\n", cmd1);
+	//printf("cmd 2 = %s\n", cmd2);
+
+	while (ac--)
 	{
-		ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
-		return(0);
+		printf("av %d = %s\n", i, av[i]);
+		i++;
 	}
-	if ((pipe(fd) == -1))
-	{
-		perror("pipe error");
-		exit(-1);
-	}
-	pid = fork();
-	if (pid == -1)
-	{
-		perror("fork error");
-		exit(1);
-	}
-	else if (pid == 0)
-		child(av, fd, pid);
-	else
-		father(av, fd, pid);
-	wait(NULL);
+	free(cmd1);
+	free(cmd2);
 	return (0);
 }

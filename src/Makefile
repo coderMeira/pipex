@@ -3,12 +3,12 @@ CFLAGS = -Wall -Werror -Wextra -g
 
 NAME = pipex
 
-SRCS = 
+SRCS = pipex.c ../lib/libft/src/libft.a 
 
 OBJS = $(SRCS:.c=.o)
 
 $(NAME) : $(OBJS)
-	gcc $(OBJS) $(FLAGS) -o $(NAME) && mv $(NAME) ../../bin
+	gcc $(OBJS) $(FLAGS) -o $(NAME) && mv $(NAME) ../bin
 
 all: $(NAME)
 
