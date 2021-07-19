@@ -22,33 +22,38 @@ static void	father(char **av, int *fd, pid_t pid)
 	execlp("cat", "cat", NULL);
 }
 
-static void trim(char *str, char *cmd)
+static char** parse(char **av, int *i, int *j)
 {
-	int		i;
-	int		j;
-	char	*newstr;
+	char	**newcmd;
 
-	i = 0;
-	j = 0;
-	newstr = ft_calloc((ft_strlen(str) - 3), sizeof(char));
-	while (!(ft_isalpha(str[i])))
-		i++;
-	while (ft_isalpha(newstr[i]))
-		newstr[j++] = str[i++];
-	cmd = newstr;
+	newcmd = malloc(sizeof(char *) * 2);
+	newcmd[0] = ft_strdup(av[*i]);
+	while (av[++*i][0] == '-')
+		newcmd[++*j] = av[*i];
+	return (newcmd);
 }
 
 int	main(int ac, char **av)
 {
 	int		fd[2];
 	pid_t	pid;
-	char	*cmd1;
-	char	*cmd2;
-	int 	i = 0;
+	char	**cmd1;
+	char	**cmd2;
+	int 	j;
+	int 	i;
 
-	//trim(av[1], cmd1);
-	//trim(av[2], cmd2);
+	j = 0;
+	i = 2;
+	cmd1 = parse(av, &i, &j);
+	printf("%d\n", i);
+	printf("%d\n", j);
+	j = 0;
+	cmd2 = parse(av, &i, &j);
 
+	printf("cmd 1[0] = %s\n", cmd1[0]);
+	printf("cmd 1[1] = %s\n", cmd1[1]);
+	printf("cmd 2[0] = %s\n", cmd2[0]);
+	printf("cmd 2[1] = %s\n", cmd2[1]);
 	// if (ac != 5)
 	// {
 	// 	ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
@@ -70,15 +75,14 @@ int	main(int ac, char **av)
 	// else
 	// 	father(av, fd, pid);
 	// wait(NULL);
-
-	//printf("cmd 1 = %s\n", cmd1);
+	//printf("cmd 1.1 = %s\n", cmd1[1]);
 	//printf("cmd 2 = %s\n", cmd2);
 
-	while (ac--)
-	{
-		printf("av %d = %s\n", i, av[i]);
-		i++;
-	}
+	// while (ac--)
+	// {
+	// 	printf("av %d = %s\n", i, av[i]);
+	// 	i++;
+	// }
 	free(cmd1);
 	free(cmd2);
 	return (0);
