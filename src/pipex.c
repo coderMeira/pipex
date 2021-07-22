@@ -6,84 +6,94 @@
 #include<sys/wait.h>
 #include "../lib/libft/inc/libft.h"
 
-static void	child(char **av, int *fd, pid_t pid)
+static char **get_paths(char **env, char **cmd, int *i)
 {
-	dup2(fd[1], 1);
+	char	*path;
+	char	*tmp;
+	char 	**varios;
+
+	path = env[1] + 5;
+	varios = ft_split(path, ':');
+	while (varios[*i])
+	{
+		tmp = ft_strjoin(varios[*i], "/");
+		varios[*i] = ft_strjoin(tmp, *cmd);
+		free(tmp);
+		(*i)++;
+	}
+	return (varios);
+}
+
+static void	child(int *fd, char **cmd1, char **env)
+{
+	char	**varios;
+	int		i;
+
+	varios = get_paths(env, cmd1, &i);
+	dup2(fd[1], STDOUT_FILENO);
 	close(fd[1]);
 	close(fd[0]);
-	execlp("ls", "ls", NULL);
+	while (i--)
+		execve(varios[i], cmd1, NULL);
 }
 
-static void	father(char **av, int *fd, pid_t pid)
+static void	father(int *fd, char **cmd2, char **env, pid_t pid)
 {
-	dup2(fd[0], 0);
+	char	**varios;
+	int		i;
+
+	varios = get_paths(env, cmd2, &i);
+	waitpid(pid, NULL, 0);
+	dup2(fd[1], STDIN_FILENO);
+	while (i--)
+		execve(varios[i], cmd2, NULL);
 	close(fd[1]);
 	close(fd[0]);
-	execlp("cat", "cat", NULL);
 }
 
-static char** parse(char **av, int *i, int *j)
-{
-	char	**newcmd;
-
-	newcmd = malloc(sizeof(char *) * 2);
-	newcmd[0] = ft_strdup(av[*i]);
-	while (av[++*i][0] == '-')
-		newcmd[++*j] = av[*i];
-	return (newcmd);
-}
-
-int	main(int ac, char **av)
+int	main(int ac, char **av, char **env)
 {
 	int		fd[2];
 	pid_t	pid;
 	char	**cmd1;
 	char	**cmd2;
-	int 	j;
-	int 	i;
 
-	j = 0;
-	i = 2;
-	cmd1 = parse(av, &i, &j);
-	printf("%d\n", i);
-	printf("%d\n", j);
-	j = 0;
-	cmd2 = parse(av, &i, &j);
+	cmd1 = ft_split(av[2], ' ');
+	cmd2 = ft_split(av[3], ' ');
 
-	printf("cmd 1[0] = %s\n", cmd1[0]);
-	printf("cmd 1[1] = %s\n", cmd1[1]);
-	printf("cmd 2[0] = %s\n", cmd2[0]);
-	printf("cmd 2[1] = %s\n", cmd2[1]);
-	// if (ac != 5)
+	// while (cmd1[j])
 	// {
-	// 	ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
-	// 	return(0);
+	// 	printf("cmd1[%d] = %s\n", j, cmd1[j]);
+	// 	j++;
 	// }
-	// if ((pipe(fd) == -1))
+	// j = 0;
+	// while (cmd2[j])
 	// {
-	// 	perror("pipe error");
-	// 	exit(-1);
+	// 	printf("cmd2[%d] = %s\n", j, cmd2[j]);
+	// 	j++;
 	// }
-	// pid = fork();
-	// if (pid == -1)
-	// {
-	// 	perror("fork error");
-	// 	exit(1);
-	// }
-	// else if (pid == 0)
-	// 	child(av, fd, pid);
-	// else
-	// 	father(av, fd, pid);
-	// wait(NULL);
-	//printf("cmd 1.1 = %s\n", cmd1[1]);
-	//printf("cmd 2 = %s\n", cmd2);
 
-	// while (ac--)
-	// {
-	// 	printf("av %d = %s\n", i, av[i]);
-	// 	i++;
-	// }
-	free(cmd1);
-	free(cmd2);
+	if (ac != 5)
+	{
+		ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
+		return(0);
+	}
+	if ((pipe(fd) == -1))
+	{
+		perror("pipe error");
+		exit(-1);
+	}
+	pid = fork();
+	if (pid == -1)
+	{
+		perror("fork error");
+		exit(1);
+	}
+	else if (pid == 0)
+		child(fd, cmd1, env);
+	else
+		father(fd, cmd1, env, pid);
+	close(fd[0]);
+	close(fd[1]);
 	return (0);
 }
