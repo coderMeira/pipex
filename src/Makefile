@@ -3,19 +3,29 @@ CFLAGS = -Wall -Werror -Wextra -g
 
 NAME = pipex
 
-SRCS = pipex.c ../lib/libft/src/libft.a 
+LIBFT_DIR = ../lib/libft/src
+LIBFT_EXEC = ../lib/libft/bin/libft.a
+
+SRCS = pipex.c free.c
 
 OBJS = $(SRCS:.c=.o)
 
-$(NAME) : $(OBJS)
-	gcc $(OBJS) $(FLAGS) -o $(NAME) && mv $(NAME) ../bin
-
 all: $(NAME)
+
+$(NAME): $(LIBFT_EXEC) $(OBJS)
+		gcc $(CFLAGS) $(OBJS) $(LIBFT_EXEC) -o $(NAME) && mv $(NAME) ../bin
+		@echo "Ready to use!"
+
+$(LIBFT_EXEC):
+		@echo "Compiling libft"
+		cd $(LIBFT_DIR) && make
 
 clean:
 	rm -rf $(OBJS)
+	cd $(LIBFT_DIR) && make clean
 
 fclean:
-	rm -rf $(OBJS) $(NAME)
+	rm -rf $(OBJS) ../bin/$(NAME)
+	cd $(LIBFT_DIR) && make fclean
 
 re: fclean all
