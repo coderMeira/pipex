@@ -6,14 +6,14 @@ NAME = pipex
 LIBFT_DIR = ../lib/libft/src
 LIBFT_EXEC = ../lib/libft/bin/libft.a
 
-SRCS = pipex.c free.c
+SRCS = pipex.c utils.c search_path.c
 
 OBJS = $(SRCS:.c=.o)
 
 all: $(NAME)
 
 $(NAME): $(LIBFT_EXEC) $(OBJS)
-		gcc $(CFLAGS) $(OBJS) $(LIBFT_EXEC) -o $(NAME) && mv $(NAME) ../bin
+		gcc $(CFLAGS) $(LIBFT_EXEC) $(OBJS) -o $(NAME) && mv $(NAME) ../bin
 		@echo "Ready to use!"
 
 $(LIBFT_EXEC):
