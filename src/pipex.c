@@ -1,124 +1,79 @@
 #include "../inc/pipex.h"
 
-char	*ft_joinspace(char *s1, char *s2)
+static void	child_process_start(int *fd, char **argv, char **envp)
 {
-	char	*new_str;
-	int		i;
-	int		j;
+	int		fd_infile;
+	char	*path;
+	char	**arg_cmd;
 
-	i = 0;
-	new_str = malloc(sizeof(char) * ft_strlen(s1) + ft_strlen(s2) + 2);
-	while (s1[i])
+	close(fd[FD_READ_END]);
+	fd_infile = open (argv[1], O_RDONLY);
+	check_fd(fd_infile, argv[1]);
+	dup2(fd_infile, STDIN_FILENO);
+	close(fd_infile);
+	dup2(fd[FD_WRITE_END], STDOUT_FILENO);
+	close(fd[FD_WRITE_END]);
+	arg_cmd = split_cmd_arg(argv[2]);
+	get_path(arg_cmd[0], envp, &path);
+	if (execve(path, arg_cmd, envp) == -1)
 	{
-		new_str[i] = s1[i];
-		i++;
+		ft_putstr_fd("pipex: command not found: ", 2);
+		ft_putendl_fd(arg_cmd[0], 2);
+		free_matrix(arg_cmd);
+		free(path);
+		exit(0);
 	}
-	j = 0;
-	new_str[i++] = ' ';
-	while (s2[j])
-		new_str[i++] = s2[j++];
-	new_str[i] = '\0';
-	return (new_str);
 }
 
-static	char	**path_finder(char **env)
+static	void	child_process_end(int *fd, char **argv, char **envp)
 {
-	int		i;
-	char	**paths;
+	int		fd_outfile;
+	char	*path;
+	char	**arg_cmd;
 
-	i = 0;
-	paths = NULL;
-	while (env)
+	close(fd[FD_WRITE_END]);
+	fd_outfile = open(argv[4], O_WRONLY | O_CREAT | O_TRUNC | O_APPEND,
+			S_IRWXU);
+	dup2(fd[FD_READ_END], STDIN_FILENO);
+	close(fd[FD_READ_END]);
+	dup2(fd_outfile, STDOUT_FILENO);
+	arg_cmd = split_cmd_arg(argv[3]);
+	get_path(arg_cmd[0], envp, &path);
+	if (execve(path, arg_cmd, envp) == -1)
 	{
-		if (ft_strncmp(env[i], "PATH=", 5) == 0)
-		{
-			paths = ft_split(env[i] + 5, ':');
-			break ;
-		}
-		i++;
+		ft_putstr_fd("pipex: command not found: ", 2);
+		ft_putendl_fd(arg_cmd[0], 2);
+		free_matrix(arg_cmd);
+		free(path);
+		exit(0);
 	}
-	return (paths);
 }
 
-static	void	call_parent(char **argv, int *fd, char **env)
-{
-	char	**args;
-	char	**paths;
-	int		out;
-	int		i;
-
-	out = open(argv[4], O_WRONLY | O_CREAT, 0777);
-	if (out == -1)
-		exit(-1);
-	paths = path_finder(env);
-	args = ft_split(argv[3], ' ');
-	dup2(out, STDOUT_FILENO);
-	close(out);
-	dup2(fd[0], STDIN_FILENO);
-	close(fd[0]);
-	close(fd[1]);
-	i = 0;
-	while (paths[i])
-	{
-		paths[i] = ft_strjoin(paths[i], "/");
-		paths[i] = ft_strjoin(paths[i], args[0]);
-		execve(paths[i], args, NULL);
-		i++;
-	}
-	free_paths(paths);
-	free_paths(args);
-}
-
-static	void	call_child(char **argv, int *fd, char **env)
-{
-	int		i;
-	char	**paths;
-	char	*new_str;
-	char	**args;
-
-	new_str = ft_joinspace(argv[2], argv[1]);
-	paths = path_finder(env);
-	args = ft_split(new_str, ' ');
-	dup2(fd[1], STDOUT_FILENO);
-	close(fd[0]);
-	close(fd[1]);
-	i = 0;
-	while (paths[i])
-	{
-		paths[i] = ft_strjoin(paths[i], "/");
-		paths[i] = ft_strjoin(paths[i], args[0]);
-		execve(paths[i], ft_split(new_str, ' '), NULL);
-		i++;
-	}
-	free_paths(paths);
-	free_paths(args);
-	free(new_str);
-}
-
-int	main(int argc, char **argv, char **env)
+int	main(int argc, char *argv[], char *envp[])
 {
 	pid_t	pid;
 	int		fd[2];
-	int		i;
 
-	if (argc != 5)
-	{
-		ft_putstr_fd("Usage : ./pipex infile cmd1 cmd2 outfile\n", 2);
-		return(0);
-	}
-	if (pipe(fd) == -1)
-		exit(-1);
-	i = open(argv[1], O_RDONLY);
-	if (i == -1)
-		exit(1);
+	check_argv(argc);
+	pipe(fd);
 	pid = fork();
 	if (pid == -1)
-		exit(1);
+		perror("Error");
 	if (pid == 0)
-		call_child(argv, fd, env);
+		child_process_start(fd, argv, envp);
 	else
-		call_parent(argv, fd, env);
-	close(fd[0]);
-	close(fd[1]);
+	{
+		pid = fork();
+		if (pid == -1)
+			perror("Error");
+		if (pid == 0)
+			child_process_end(fd, argv, envp);
+		else
+		{
+			close(fd[FD_READ_END]);
+			close(fd[FD_WRITE_END]);
+		}
+	}
 	waitpid(pid, NULL, 0);
+	return (0);
 }
